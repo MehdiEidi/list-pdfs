@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -13,7 +13,7 @@ func getDrives() []string {
 	for _, drive := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
 		f, err := os.Open(string(drive) + ":\\")
 		if err == nil {
-			d = append(d, string(drive))
+			d = append(d, string(drive)+":/")
 			f.Close()
 		}
 	}
@@ -22,28 +22,30 @@ func getDrives() []string {
 }
 
 func main() {
-	drives := []string{"g:/Books/"}
+	drives := getDrives()
+
+	f, err := os.Create("list.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
 
 	for _, d := range drives {
-		// start walk from each d
-		// for each pdf, add its name to list.txt
 		err := filepath.Walk(d, func(path string, info fs.FileInfo, err error) error {
-			if err != nil {
-				fmt.Println(err)
-			}
-
 			if !info.IsDir() {
 				if ext := filepath.Ext(path); ext == ".pdf" {
-					fmt.Println(filepath.Base(path))
+					_, err = f.WriteString(path + "\n")
+					if err != nil {
+						log.Fatal(err)
+					}
 				}
-
 			}
 
 			return nil
 		})
 
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}
 }
