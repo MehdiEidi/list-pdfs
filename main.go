@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func getDrives() []string {
@@ -22,6 +24,9 @@ func getDrives() []string {
 }
 
 func main() {
+	start := time.Now()
+	fmt.Println("Started...")
+
 	drives := getDrives()
 
 	f, err := os.Create("list.txt")
@@ -48,4 +53,8 @@ func main() {
 			log.Println(err)
 		}
 	}
+
+	fmt.Println("Finished.")
+	duration := time.Since(start)
+	fmt.Println("Elapsed Time:", duration)
 }
