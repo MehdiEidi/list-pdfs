@@ -10,11 +10,11 @@ import (
 	"time"
 )
 
-func getDrives(wg *sync.WaitGroup) []string {
+func drives(wg *sync.WaitGroup) []string {
 	d := make([]string, 0)
 
 	for _, drive := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
-		f, err := os.Open(string(drive) + ":\\")
+		f, err := os.Open(string(drive) + ":/")
 		if err == nil {
 			d = append(d, string(drive)+":/")
 			wg.Add(1)
@@ -31,7 +31,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	drives := getDrives(&wg)
+	drives := drives(&wg)
 
 	f, err := os.Create("list.txt")
 	if err != nil {
@@ -40,30 +40,32 @@ func main() {
 	defer f.Close()
 
 	for _, d := range drives {
-		go func(drive string) {
-			err := filepath.Walk(drive, func(path string, info fs.FileInfo, err error) error {
-				if !info.IsDir() {
-					if ext := filepath.Ext(path); ext == ".pdf" {
-						_, err = f.WriteString(path + "\n")
-						if err != nil {
-							log.Fatal(err)
-						}
-					}
-				}
-
-				return nil
-			})
-
-			if err != nil {
-				log.Println(err)
-			}
-
-			wg.Done()
-		}(d)
+		go search(d, f, &wg)
 	}
 
 	wg.Wait()
-	fmt.Println("Finished.")
+
 	duration := time.Since(start)
-	fmt.Println("Elapsed Time:", duration)
+	fmt.Printf("Finished\nElapsed Time: %v", duration)
+}
+
+func search(drive string, file *os.File, wg *sync.WaitGroup) {
+	err := filepath.Walk(drive, func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			if ext := filepath.Ext(path); ext == ".pdf" {
+				_, err = file.WriteString(path + "\n")
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Println(err)
+	}
+
+	wg.Done()
 }
